@@ -8,22 +8,25 @@ import copy
 
 def insertDfTrans_kineFrag(micrFrag, dfTransUpdt):
     for ii in range(len(micrFrag)):
-        if 0.15 > micrFrag.loc[ii, 'acc'] > -0.15:
-            micrFrag.loc[ii, 'cru'] = 1
+        if 0.25 > micrFrag.loc[ii, 'acc'] > -0.25:
+            micrFrag.loc[ii, 'accState'] = 'cru'
+        elif micrFrag.loc[ii, 'acc'] > 0:
+            micrFrag.loc[ii, 'accState'] = 'speedUp'
         else:
-            micrFrag.loc[ii, 'cru'] = 0
+            micrFrag.loc[ii, 'accState'] = 'speedDn'
+
 
     startIndex = 0
-    crntAcc = 1
+    # crntAcc = micrFrag.loc[0, 'accState']
     dfCutAll = []
     dfSimp = pd.DataFrame()
     for ii in range(1, len(micrFrag)):
-        if micrFrag.loc[ii, 'acc'] * crntAcc < 0 or (micrFrag.loc[ii, 'cru'] * micrFrag.loc[ii - 1, 'cru']):
+        if micrFrag.loc[ii, 'accState'] != micrFrag.loc[ii-1, 'accState'] or ii == len(micrFrag):
             dfCut = micrFrag.iloc[startIndex:ii, :]
             dfCut = dfCut.reset_index(drop=True)
             dfCut.loc[0, 'start_loc'] = int(startIndex)
             startIndex = ii - 1
-            crntAcc = micrFrag.loc[ii, 'acc']
+            # crntAcc = micrFrag.loc[ii, 'acc']
             dfCutAll.append(dfCut)
 
     for ii in range(len(dfCutAll)):
@@ -61,17 +64,18 @@ for i in range(len(indexList)):
 dfTrans.columns = indexList
 dfTrans.index = indexList
 
-fo = open('log_20210311_vmean.txt', 'a')
-filepath = r'./片段汇总'
+fo = open('log_20210614_vmean.txt', 'a')
+filepath = r'./Filtered片段'
+savepath = r'./LabelWithFile'
 for root, dirs, files in os.walk(filepath):
     for name in files:
         filename = os.path.join(root, name)
         if filename[-5:] == '.xlsx':
-            dfExl = pd.read_excel(filename, header=None)
-            dfExl.columns = ['vel', 'acc']
+            dfExl = pd.read_excel(filename, index_col=0)
+            # dfExl.columns = ['vel', 'acc']
             try:
                 dfTrans, dfLabel = insertDfTrans_kineFrag(dfExl, dfTrans)
-                dfLabel.to_excel(os.path.join(root, 'LabelWithFile', name))
+                dfLabel.to_excel(os.path.join(savepath, name))
             except:
                 print(filename + ' error!')
                 fo.write(filename + ' error!' + '\n')
